@@ -1,0 +1,42 @@
+name: Deploy Django App
+
+on:
+  push:
+    branches:
+      - main  # Runs when code is pushed to main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12.9'  # Adjust Python version as needed
+
+      - name: Install Dependencies
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Migrations
+        run: |
+          source venv/bin/activate
+          python manage.py migrate
+
+      - name: Deploy to Heroku
+        if: success()
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+          HEROKU_APP_NAME: your-heroku-app-name
+        run: |
+          curl https://cli-assets.heroku.com/install.sh | sh
+          heroku login --interactive
+          git remote add heroku https://git.heroku.com/$HEROKU_APP_NAME.git
+          git push heroku main
